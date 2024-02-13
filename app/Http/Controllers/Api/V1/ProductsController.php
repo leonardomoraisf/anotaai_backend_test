@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\v1;
+namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Services\ProductsService;
@@ -8,17 +8,16 @@ use Illuminate\Http\Request;
 
 class ProductsController extends Controller
 {
-    private ProductsService $productsService;
-
     /**
      * Create a new ProductsController instance.
      *
      * @return void
      */
-    public function __construct(ProductsService $productsService)
+    public function __construct(
+        private readonly ProductsService $productsService
+    )
     {
         $this->middleware('auth:api');
-        $this->productsService = $productsService;
     }
 
     public function index(): \Illuminate\Http\JsonResponse

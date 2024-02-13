@@ -7,11 +7,11 @@ use App\Services\Aws\AwsSqsService;
 
 class ProductsService
 {
-    private AwsSqsService $awsSqsService;
-
-    public function __construct(AwsSqsService $awsSqsService)
+    public function __construct(
+        private readonly AwsSqsService $awsSqsService
+    )
     {
-        $this->awsSqsService = $awsSqsService;
+
     }
 
     public function getAll(): \Illuminate\Database\Eloquent\Collection
