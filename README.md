@@ -41,7 +41,7 @@ git clone https://github.com/leonardomoraisf/anotaai_backend_test
 ./vendor/bin/sail artisan jwt:secret
 ```
 
-4. Modify the environment file:
+5. Modify the environment file:
 
 **Config Values**
 
