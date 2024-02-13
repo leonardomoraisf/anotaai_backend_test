@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Auth\Jwt;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 
 class AuthController extends Controller
