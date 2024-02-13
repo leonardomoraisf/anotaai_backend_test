@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\DTO\Api\V1\Products\StoreProductDto;
+use App\DTO\Api\V1\Products\UpdateProductDto;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Products\StoreRequest;
+use App\Http\Requests\Api\V1\Products\UpdateRequest;
+use App\Http\Resources\Api\V1\ProductResource;
 use App\Services\ProductsService;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class ProductsController extends Controller
 {
@@ -20,7 +25,7 @@ class ProductsController extends Controller
         $this->middleware('auth:api');
     }
 
-    public function index(): \Illuminate\Http\JsonResponse
+    public function index(): JsonResponse
     {
         try {
             $products = $this->productsService->getAll();
@@ -30,10 +35,10 @@ class ProductsController extends Controller
             ]);
         }
 
-        return response()->json($products);
+        return ProductResource::collection($products)->response(request());
     }
 
-    public function show($id): \Illuminate\Http\JsonResponse
+    public function show($id): JsonResponse
     {
         try {
             $product = $this->productsService->getById($id);
@@ -43,20 +48,20 @@ class ProductsController extends Controller
             ]);
         }
 
-        return response()->json($product);
+        return ProductResource::make($product)->response(request());
     }
 
-    public function store(Request $request): \Illuminate\Http\JsonResponse
+    public function store(StoreRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'title' => 'required|string',
-            'price' => 'required|numeric',
-            'description' => 'nullable',
-            'category_id' => 'nullable|exists:categories,id',
-        ]);
-
         try {
-            $product = $this->productsService->create($data);
+            $product = $this->productsService->store(
+                new StoreProductDto(
+                    $request->validated('title'),
+                    $request->validated('price'),
+                    $request->validated('description'),
+                    $request->validated('category_id'),
+                )
+            );
         } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage(),
@@ -66,17 +71,18 @@ class ProductsController extends Controller
         return response()->json($product);
     }
 
-    public function update(Request $request, $id): \Illuminate\Http\JsonResponse
+    public function update(UpdateRequest $request, $id): JsonResponse
     {
-        $data = $request->validate([
-            'title' => 'nullable|string',
-            'price' => 'nullable|numeric',
-            'description' => 'nullable|string',
-            'category_id' => 'nullable|exists:categories,id',
-        ]);
-
         try {
-            $product = $this->productsService->update($id, $data);
+            $product = $this->productsService->update(
+                $id,
+                new UpdateProductDto(
+                    $request->validated('title'),
+                    $request->validated('price'),
+                    $request->validated('description'),
+                    $request->validated('category_id'),
+                )
+            );
         } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage(),
@@ -86,14 +92,14 @@ class ProductsController extends Controller
         return response()->json($product);
     }
 
-    public function destroy($id): \Illuminate\Http\JsonResponse
+    public function destroy($id): JsonResponse
     {
         try {
             $this->productsService->delete($id);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage(),
-            ], $e->getCode());
+            ]);
         }
 
         return response()->json(null, 204);

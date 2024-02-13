@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\DTO\Api\V1\Categories\StoreCategoryDto;
+use App\DTO\Api\V1\Categories\UpdateCategoryDto;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Categories\StoreRequest;
+use App\Http\Requests\Api\V1\Categories\UpdateRequest;
+use App\Http\Resources\Api\V1\CategoryResource;
 use App\Services\CategoriesService;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class CategoriesController extends Controller
 {
@@ -20,69 +25,70 @@ class CategoriesController extends Controller
         $this->middleware('auth:api');
     }
 
-    public function index(): \Illuminate\Http\JsonResponse
+    public function index(): JsonResponse
     {
         try {
-            $products = $this->categoriesService->getAll();
+            $categories = $this->categoriesService->getAll();
         } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage(),
             ]);
         }
 
-        return response()->json($products);
+        return CategoryResource::collection($categories)->response(request());
     }
 
-    public function show($id): \Illuminate\Http\JsonResponse
+    public function show($id): JsonResponse
     {
         try {
-            $product = $this->categoriesService->getById($id);
+            $category = $this->categoriesService->getById($id);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage(),
             ]);
         }
 
-        return response()->json($product);
+        return CategoryResource::make($category)->response(request());
     }
 
-    public function store(Request $request): \Illuminate\Http\JsonResponse
+    public function store(StoreRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'title' => 'required|string',
-            'description' => 'nullable',
-        ]);
-
         try {
-            $product = $this->categoriesService->create($data);
+            $category = $this->categoriesService->store(
+                new StoreCategoryDto(
+                    title: $request->validated('title'),
+                    description: $request->validated('description')
+                )
+            );
         } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage(),
             ]);
         }
 
-        return response()->json($product);
+        return CategoryResource::make($category)->response($request);
     }
 
-    public function update(Request $request, $id): \Illuminate\Http\JsonResponse
+    public function update(UpdateRequest $request, $id): JsonResponse
     {
-        $data = $request->validate([
-            'title' => 'nullable|string',
-            'description' => 'nullable|string',
-        ]);
-
         try {
-            $product = $this->categoriesService->update($id, $data);
+            $category = $this->categoriesService->update(
+                $id,
+                new UpdateCategoryDto(
+                    title: $request->validated('title'),
+                    description: $request->validated('description')
+                )
+            );
         } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage(),
             ]);
         }
 
-        return response()->json($product);
+        return CategoryResource::make($category)->response($request);
     }
 
-    public function destroy($id): \Illuminate\Http\JsonResponse
+    public function destroy($id): JsonResponse
     {
         try {
             $this->categoriesService->delete($id);
