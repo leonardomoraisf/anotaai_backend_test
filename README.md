@@ -32,16 +32,22 @@ git clone https://github.com/leonardomoraisf/anotaai_backend_test
 3. Run in terminal:
 
 ```bash
-./vendor/bin/sail up -d
+composer install && ./vendor/bin/sail up -d
 ```
 
-4. Generate Jwt Secret:
+4. Create the environment file:
+
+```bash
+cp .env.example .env
+```
+
+5. Generate Jwt Secret:
 
 ```bash
 ./vendor/bin/sail artisan jwt:secret
 ```
 
-5. Modify the environment file:
+6. Modify the environment file:
 
 **Config Values**
 
