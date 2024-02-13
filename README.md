@@ -14,7 +14,6 @@ The Microservice was developed to demonstrate how to solve the [AnotaAi Backend 
 ## Table of Contents
 
 - [Installation](#installation)
-- [Configuration](#configuration)
 - [Usage](#usage)
 - [API Endpoints](#api-endpoints)
 - [Database](#database)
@@ -52,6 +51,14 @@ AWS_SECRET_ACCESS_KEY=VALUE2
 AWS_DEFAULT_REGION=VALUE3
 AWS_DEFAULT_VERSION=VALUE4
 AWS_ARN_CATALOG_EMIT=VALUE5
+```
+
+## Database
+
+1. Run the migrations:
+
+```bash
+./vendor/bin/sail artisan migrate
 ```
 
 ## Usage
