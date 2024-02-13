@@ -3,9 +3,17 @@
 namespace App\Services;
 
 use App\Models\Category;
+use App\Services\Aws\AwsSqsService;
 
 class CategoriesService
 {
+    private AwsSqsService $awsSqsService;
+
+    public function __construct(AwsSqsService $awsSqsService)
+    {
+        $this->awsSqsService = $awsSqsService;
+    }
+
     public function getAll(): \Illuminate\Database\Eloquent\Collection
     {
         return Category::query()
@@ -31,6 +39,8 @@ class CategoriesService
         $category = new Category($data);
         $category->save();
 
+        $this->sendMessage($category);
+
         return $category;
     }
 
@@ -47,6 +57,8 @@ class CategoriesService
         $category->fill($data);
         $category->save();
 
+        $this->sendMessage($category);
+
         return $category;
     }
 
@@ -62,6 +74,22 @@ class CategoriesService
 
         $category->delete();
 
+        $this->sendMessage($category);
+
         return $category;
+    }
+
+    /**
+     * @throws \JsonException
+     */
+    private function sendMessage($category): void
+    {
+        $body = [
+            'userId' => auth()->id(),
+            'category' => $category,
+            'type' => 'category',
+        ];
+
+        $this->awsSqsService->sendMessage('catalog-emit', json_encode($body, JSON_THROW_ON_ERROR));
     }
 }

@@ -3,9 +3,17 @@
 namespace App\Services;
 
 use App\Models\Product;
+use App\Services\Aws\AwsSqsService;
 
 class ProductsService
 {
+    private AwsSqsService $awsSqsService;
+
+    public function __construct(AwsSqsService $awsSqsService)
+    {
+        $this->awsSqsService = $awsSqsService;
+    }
+
     public function getAll(): \Illuminate\Database\Eloquent\Collection
     {
         return Product::query()
@@ -31,6 +39,8 @@ class ProductsService
         $product = new Product($data);
         $product->save();
 
+        $this->sendMessage($product);
+
         return $product;
     }
 
@@ -47,6 +57,8 @@ class ProductsService
         $product->fill($data);
         $product->save();
 
+        $this->sendMessage($product);
+
         return $product;
     }
 
@@ -62,6 +74,22 @@ class ProductsService
 
         $product->delete();
 
+        $this->sendMessage($product);
+
         return $product;
+    }
+
+    /**
+     * @throws \JsonException
+     */
+    private function sendMessage($product): void
+    {
+        $body = [
+            'userId' => auth()->id(),
+            'product' => $product,
+            'type' => 'product',
+        ];
+
+        $this->awsSqsService->sendMessage('catalog-emit', json_encode($body, JSON_THROW_ON_ERROR));
     }
 }
