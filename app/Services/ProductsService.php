@@ -2,79 +2,32 @@
 
 namespace App\Services;
 
+use App\DTO\Api\V1\Products\StoreProductDto;
+use App\DTO\Api\V1\Products\UpdateProductDto;
 use App\Models\Product;
-use App\Services\Aws\AwsSqsService;
+use App\Services\Aws\Sqs\Catalog\CatalogSqsService;
 
 class ProductsService
 {
-    private AwsSqsService $awsSqsService;
-
-    public function __construct(AwsSqsService $awsSqsService)
+    public function __construct(
+        private readonly CatalogSqsService $catalogSqsService
+    )
     {
-        $this->awsSqsService = $awsSqsService;
+
     }
 
-    public function getAll(): \Illuminate\Database\Eloquent\Collection
+    public function getAll(): \Illuminate\Pagination\LengthAwarePaginator
     {
-        return Product::query()
-            ->where('user_id', auth()->id())
-            ->get();
+        return Product::where('user_id', auth()->id())->paginate(10);
     }
 
-    public function getById($id): \Illuminate\Database\Eloquent\Builder|array|\Illuminate\Database\Eloquent\Collection|\Illuminate\Database\Eloquent\Model
+    public function getById($id): Product
     {
-        $product = Product::query()
-            ->where('user_id', auth()->id())
-            ->find($id);
+        $product = Product::where('user_id', auth()->id())->find($id);
 
         if (! $product) {
             throw new \RuntimeException('Product not found', 404);
         }
-
-        return $product;
-    }
-
-    public function create(array $data): Product
-    {
-        $product = new Product($data);
-        $product->save();
-
-        $this->sendMessage($product);
-
-        return $product;
-    }
-
-    public function update($id, array $data): \Illuminate\Database\Eloquent\Builder|array|\Illuminate\Database\Eloquent\Collection|\Illuminate\Database\Eloquent\Model
-    {
-        $product = Product::query()
-            ->where('user_id', auth()->id())
-            ->find($id);
-
-        if (! $product) {
-            throw new \RuntimeException('Product not found', 404);
-        }
-
-        $product->fill($data);
-        $product->save();
-
-        $this->sendMessage($product);
-
-        return $product;
-    }
-
-    public function delete($id): \Illuminate\Database\Eloquent\Builder|array|\Illuminate\Database\Eloquent\Collection|\Illuminate\Database\Eloquent\Model
-    {
-        $product = Product::query()
-            ->where('user_id', auth()->id())
-            ->find($id);
-
-        if (! $product) {
-            throw new \RuntimeException('Product not found', 404);
-        }
-
-        $product->delete();
-
-        $this->sendMessage($product);
 
         return $product;
     }
@@ -82,14 +35,57 @@ class ProductsService
     /**
      * @throws \JsonException
      */
-    private function sendMessage($product): void
+    public function store(StoreProductDto $dto): Product
     {
-        $body = [
-            'userId' => auth()->id(),
-            'product' => $product,
-            'type' => 'product',
-        ];
+        $product = Product::create([
+            $dto->title,
+            $dto->description,
+            $dto->price,
+            $dto->category_id,
+        ]);
 
-        $this->awsSqsService->sendMessage('catalog-emit', json_encode($body, JSON_THROW_ON_ERROR));
+        $this->catalogSqsService->sendCatalogEmitProductMessage($product);
+
+        return $product;
+    }
+
+    /**
+     * @throws \JsonException
+     */
+    public function update($id, UpdateProductDto $dto): Product
+    {
+        $product = Product::where('user_id', auth()->id())->find($id);
+
+        if (! $product) {
+            throw new \RuntimeException('Product not found', 404);
+        }
+
+        $product->title = $dto->title ?? $product->title;
+        $product->price = $dto->price ?? $product->price;
+        $product->description = $dto->description ?? $product->description;
+        $product->category_id = $dto->category_id ?? $product->category_id;
+        $product->save();
+
+        $this->catalogSqsService->sendCatalogEmitProductMessage($product);
+
+        return $product;
+    }
+
+    /**
+     * @throws \JsonException
+     */
+    public function delete($id): Product
+    {
+        $product = Product::where('user_id', auth()->id())->find($id);
+
+        if (! $product) {
+            throw new \RuntimeException('Product not found', 404);
+        }
+
+        $product->delete();
+
+        $this->catalogSqsService->sendCatalogEmitProductMessage($product);
+
+        return $product;
     }
 }

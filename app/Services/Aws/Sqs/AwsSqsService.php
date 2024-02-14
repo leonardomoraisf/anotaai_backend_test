@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Aws;
+namespace App\Services\Aws\Sqs;
 
 use App\Configs\Aws\AwsSqsConfig;
 use Aws\Exception\AwsException;
